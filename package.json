@@ -1,0 +1,46 @@
+{
+  "name": "klanex",
+  "version": "0.1.0",
+  "description": "Official TypeScript/Node SDK for klanex — the tool orchestration engine for AI agents",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chrassy/klanex-js.git"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "klanex",
+    "ai-agents",
+    "tool-use",
+    "llm",
+    "orchestration",
+    "webhooks"
+  ],
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.0"
+  }
+}
