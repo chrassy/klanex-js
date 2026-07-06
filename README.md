@@ -6,7 +6,7 @@ the tool orchestration engine for AI agents. Fire a tool-use intent, get an
 circuit breaking, credentials, and signed webhooks.
 
 ```bash
-npm install klanex
+npm install @klanex/sdk
 ```
 
 Requires Node 18+. Zero runtime dependencies.
@@ -14,7 +14,7 @@ Requires Node 18+. Zero runtime dependencies.
 ## Submit a tool call
 
 ```ts
-import { Klanex, KlanexSchemaError } from "klanex";
+import { Klanex, KlanexSchemaError } from "@klanex/sdk";
 
 const klanex = new Klanex({
   apiKey: process.env.KLANEX_API_KEY!,
@@ -61,7 +61,7 @@ the engine absorbs them.
 ## Receive results via webhook
 
 ```ts
-import { verifyWebhook, WEBHOOK_HEADERS, WebhookVerificationError } from "klanex";
+import { verifyWebhook, WEBHOOK_HEADERS, WebhookVerificationError } from "@klanex/sdk";
 
 app.post("/hooks/klanex", express.raw({ type: "application/json" }), (req, res) => {
   let event;

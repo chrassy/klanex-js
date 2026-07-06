@@ -1,8 +1,11 @@
 {
-  "name": "klanex",
+  "name": "@klanex/sdk",
   "version": "0.1.0",
   "description": "Official TypeScript/Node SDK for klanex — the tool orchestration engine for AI agents",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/chrassy/klanex-js.git"
