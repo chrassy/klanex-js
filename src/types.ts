@@ -62,6 +62,18 @@ export interface ReplayResponse {
   replayOf: string;
 }
 
+export interface RotateApiKeyResponse {
+  tenantId: string;
+  /** The new API key. Shown only once — persist it if needed. */
+  apiKey: string;
+}
+
+export interface RotateWebhookSecretResponse {
+  tenantId: string;
+  /** The new webhook signing secret. Shown only once. */
+  webhookSecret: string;
+}
+
 export interface ExecutionError {
   code: ErrorCode;
   message: string;

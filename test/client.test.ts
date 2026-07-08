@@ -174,3 +174,31 @@ describe("waitForResult", () => {
     expect((err as KlanexError).code).toBe("WAIT_TIMEOUT");
   });
 });
+
+describe("rotateApiKey", () => {
+  it("returns the new key and switches the client to it", async () => {
+    const stub = stubFetch([
+      { status: 200, body: { tenant_id: "ten_1", api_key: "klx_new" } },
+      { status: 202, body: { execution_id: "exe_1", status: "QUEUED" } },
+    ]);
+    const c = client(stub);
+    const out = await c.rotateApiKey();
+    expect(out).toEqual({ tenantId: "ten_1", apiKey: "klx_new" });
+    expect(stub.calls[0]!.url).toBe("https://ingest.example.com/v1/api-key/rotate");
+    expect(stub.calls[0]!.init.method).toBe("POST");
+
+    // The next call must use the rotated key, not the original.
+    await c.execute({ target: { url: "https://x.example.com" } });
+    expect((stub.calls[1]!.init.headers as Record<string, string>)["X-API-Key"]).toBe("klx_new");
+  });
+});
+
+describe("rotateWebhookSecret", () => {
+  it("returns the new secret", async () => {
+    const stub = stubFetch([{ status: 200, body: { tenant_id: "ten_1", webhook_secret: "whsec_new" } }]);
+    const out = await client(stub).rotateWebhookSecret();
+    expect(out).toEqual({ tenantId: "ten_1", webhookSecret: "whsec_new" });
+    expect(stub.calls[0]!.url).toBe("https://ingest.example.com/v1/webhook-secret/rotate");
+    expect(stub.calls[0]!.init.method).toBe("POST");
+  });
+});
