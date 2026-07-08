@@ -13,6 +13,8 @@ export type {
   ExecutionStatus,
   HttpMethod,
   ReplayResponse,
+  RotateApiKeyResponse,
+  RotateWebhookSecretResponse,
   Target,
   WebhookEvent,
   WebhookEventName,

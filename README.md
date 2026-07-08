@@ -102,6 +102,19 @@ const { executionId: cloneId } = await klanex.replay(failedExecutionId);
 Re-runs the byte-exact original payload with the same sealed credentials —
 no re-prompting the LLM that generated it.
 
+## Rotate credentials
+
+```ts
+// Old key stops working immediately; this client switches to the new one.
+const { apiKey } = await klanex.rotateApiKey();
+
+// Callbacks after this are signed with the new secret — update your verifier.
+const { webhookSecret } = await klanex.rotateWebhookSecret();
+```
+
+Each secret is returned only once. If other processes share the key, persist
+the value from `rotateApiKey()`.
+
 ## Development
 
 ```bash

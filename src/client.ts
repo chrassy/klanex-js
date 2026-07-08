@@ -5,6 +5,8 @@ import type {
   Execution,
   ExecutionStatus,
   ReplayResponse,
+  RotateApiKeyResponse,
+  RotateWebhookSecretResponse,
 } from "./types.js";
 
 export interface KlanexOptions {
@@ -26,7 +28,7 @@ export interface WaitOptions {
 const TERMINAL: ReadonlySet<ExecutionStatus> = new Set(["SUCCEEDED", "FAILED"]);
 
 export class Klanex {
-  readonly #apiKey: string;
+  #apiKey: string;
   readonly #baseUrl: string;
   readonly #fetch: typeof globalThis.fetch;
 
@@ -89,6 +91,30 @@ export class Klanex {
       replay_of: string;
     };
     return { executionId: data.execution_id, status: data.status, replayOf: data.replay_of };
+  }
+
+  /**
+   * Rotate this tenant's API key. The previous key stops working immediately;
+   * this client instance switches to the new key so subsequent calls keep
+   * working. The returned raw key is shown only here — persist it if other
+   * processes use it.
+   */
+  async rotateApiKey(): Promise<RotateApiKeyResponse> {
+    const res = await this.#request("POST", "/v1/api-key/rotate");
+    const data = (await res.json()) as { tenant_id: string; api_key: string };
+    this.#apiKey = data.api_key;
+    return { tenantId: data.tenant_id, apiKey: data.api_key };
+  }
+
+  /**
+   * Rotate this tenant's webhook signing secret. Callbacks sent after this are
+   * signed with the new secret, so update your verifier. The secret is
+   * returned only here.
+   */
+  async rotateWebhookSecret(): Promise<RotateWebhookSecretResponse> {
+    const res = await this.#request("POST", "/v1/webhook-secret/rotate");
+    const data = (await res.json()) as { tenant_id: string; webhook_secret: string };
+    return { tenantId: data.tenant_id, webhookSecret: data.webhook_secret };
   }
 
   /**
