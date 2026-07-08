@@ -1,7 +1,7 @@
 # klanex
 
-Official TypeScript/Node SDK for [klanex](https://github.com/chrassy/klanex) —
-the tool orchestration engine for AI agents. Fire a tool-use intent, get an
+Official TypeScript/Node SDK for [klanex](https://klanexai.com) — the tool
+orchestration engine for AI agents. Fire a tool-use intent, get an
 `execution_id` back in milliseconds, and let the engine own retries, backoff,
 circuit breaking, credentials, and signed webhooks.
 
@@ -10,6 +10,8 @@ npm install klanex
 ```
 
 Requires Node 18+. Zero runtime dependencies.
+
+> Building in Python? See the [Python SDK](https://github.com/chrassy/klanex-python).
 
 ## Submit a tool call
 
