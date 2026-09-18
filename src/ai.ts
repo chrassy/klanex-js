@@ -1,5 +1,5 @@
 /**
- * Vercel AI SDK adapter: `import { klanexTool } from "klanex/ai"`.
+ * Vercel AI SDK adapter: `import { klanexTool } from "klanex-sdk/ai"`.
  *
  * Wraps an API call as an AI SDK tool whose input is the payload. klanex owns
  * the call's reliability (schema gate, retries, backoff, circuit breakers,

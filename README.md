@@ -6,7 +6,7 @@ orchestration engine for AI agents. Fire a tool-use intent, get an
 circuit breaking, credentials, and signed webhooks.
 
 ```bash
-npm install klanex
+npm install klanex-sdk
 ```
 
 Requires Node 18+. Zero runtime dependencies.
@@ -16,7 +16,7 @@ Requires Node 18+. Zero runtime dependencies.
 ## Submit a tool call
 
 ```ts
-import { Klanex, KlanexSchemaError } from "klanex";
+import { Klanex, KlanexSchemaError } from "klanex-sdk";
 
 const klanex = new Klanex({ apiKey: process.env.KLANEX_API_KEY! }); // https://api.klanexai.com
 
@@ -60,8 +60,8 @@ The model never sees the target URL or credentials. Use a vault
 ```ts
 import { generateText, stepCountIs } from "ai";
 import { z } from "zod";
-import { Klanex } from "klanex";
-import { klanexTool } from "klanex/ai";
+import { Klanex } from "klanex-sdk";
+import { klanexTool } from "klanex-sdk/ai";
 
 const klanex = new Klanex({ apiKey: process.env.KLANEX_API_KEY! });
 
@@ -85,8 +85,8 @@ const { text } = await generateText({
 ```ts
 import { Agent, run } from "@openai/agents";
 import { z } from "zod";
-import { Klanex } from "klanex";
-import { klanexTool } from "klanex/openai-agents";
+import { Klanex } from "klanex-sdk";
+import { klanexTool } from "klanex-sdk/openai-agents";
 
 const klanex = new Klanex({ apiKey: process.env.KLANEX_API_KEY! });
 
@@ -105,7 +105,7 @@ const result = await run(agent, "Refund charge ch_123 in full");
 Both adapters also take a plain JSON Schema instead of Zod. Frameworks pass
 JSON Schema input through unchecked, so klanex enforces it with its schema
 gate, and a failing input comes back to the model as a correction hint. The
-`klanex/ai` and `klanex/openai-agents` entry points do not use `node:crypto`,
+`klanex-sdk/ai` and `klanex-sdk/openai-agents` entry points do not use `node:crypto`,
 so they run on edge runtimes too.
 
 ## The self-correction loop
@@ -135,7 +135,7 @@ the engine absorbs them.
 ## Receive results via webhook
 
 ```ts
-import { verifyWebhook, WEBHOOK_HEADERS, WebhookVerificationError } from "klanex";
+import { verifyWebhook, WEBHOOK_HEADERS, WebhookVerificationError } from "klanex-sdk";
 
 app.post("/hooks/klanex", express.raw({ type: "application/json" }), (req, res) => {
   let event;
