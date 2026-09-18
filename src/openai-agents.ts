@@ -1,5 +1,5 @@
 /**
- * OpenAI Agents SDK adapter: `import { klanexTool } from "klanex/openai-agents"`.
+ * OpenAI Agents SDK adapter: `import { klanexTool } from "klanex-sdk/openai-agents"`.
  *
  * Wraps an API call as a function tool whose arguments are the payload.
  * klanex owns the call's reliability (schema gate, retries, backoff, circuit

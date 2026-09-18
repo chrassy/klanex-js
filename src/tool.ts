@@ -1,5 +1,5 @@
-// Framework-agnostic core of the agent-framework adapters (klanex/ai,
-// klanex/openai-agents). It deliberately imports only the client and errors,
+// Framework-agnostic core of the agent-framework adapters (klanex-sdk/ai,
+// klanex-sdk/openai-agents). It deliberately imports only the client and errors,
 // never node:crypto, so the adapters also run on edge runtimes.
 import type { Klanex } from "./client.js";
 import { KlanexError, KlanexSchemaError } from "./errors.js";
