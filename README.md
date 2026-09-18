@@ -18,10 +18,7 @@ Requires Node 18+. Zero runtime dependencies.
 ```ts
 import { Klanex, KlanexSchemaError } from "klanex";
 
-const klanex = new Klanex({
-  apiKey: process.env.KLANEX_API_KEY!,
-  baseUrl: "https://klanex-ingest-....run.app",
-});
+const klanex = new Klanex({ apiKey: process.env.KLANEX_API_KEY! }); // https://api.klanexai.com
 
 const { executionId } = await klanex.execute({
   target: {
@@ -35,6 +32,81 @@ const { executionId } = await klanex.execute({
   idempotencyKey: `refund-${chargeId}`, // retries can never double-refund
 });
 ```
+
+## Agent frameworks
+
+Turn any API call into a native tool for the
+[Vercel AI SDK](https://ai-sdk.dev) or the
+[OpenAI Agents SDK](https://openai.github.io/openai-agents-js/). The model's
+tool input becomes the request payload; klanex owns the call's reliability
+(schema gate, retries with backoff, circuit breakers, approvals, credentials)
+and the tool returns text the model can act on:
+
+- **Success:** the target's response.
+- **Rejected:** the `llm_hint`, which names the bad field when klanex can
+  tell, so the model fixes one value and calls again.
+- **Still running** after `waitTimeoutMs` (default 2 min), or **waiting for
+  approval:** a note telling the model the action is in progress and not to
+  call the tool again, so a slow API never turns into a duplicate charge.
+- **Exactly once per tool call:** the framework's tool call ID becomes the
+  idempotency key, so a resumed or retried agent step never runs the action
+  twice. Opt out with `idempotency: false`.
+
+The model never sees the target URL or credentials. Use a vault
+`connectionId`, or `headers`, which are encrypted at rest.
+
+### Vercel AI SDK (`ai` 5, 6, or 7)
+
+```ts
+import { generateText, stepCountIs } from "ai";
+import { z } from "zod";
+import { Klanex } from "klanex";
+import { klanexTool } from "klanex/ai";
+
+const klanex = new Klanex({ apiKey: process.env.KLANEX_API_KEY! });
+
+const refund = klanexTool(klanex, {
+  name: "refund",
+  description: "Refund a Stripe charge",
+  inputSchema: z.object({ charge: z.string(), amount: z.number().int() }),
+  target: { url: "https://api.stripe.com/v1/refunds", connectionId: "con_..." },
+});
+
+const { text } = await generateText({
+  model,
+  tools: { refund },
+  stopWhen: stepCountIs(5),
+  prompt: "Refund charge ch_123 in full",
+});
+```
+
+### OpenAI Agents SDK (`@openai/agents`)
+
+```ts
+import { Agent, run } from "@openai/agents";
+import { z } from "zod";
+import { Klanex } from "klanex";
+import { klanexTool } from "klanex/openai-agents";
+
+const klanex = new Klanex({ apiKey: process.env.KLANEX_API_KEY! });
+
+const refund = klanexTool(klanex, {
+  name: "create_refund",
+  description: "Refund a Stripe charge",
+  parameters: z.object({ charge: z.string(), amount: z.number().int() }),
+  target: { url: "https://api.stripe.com/v1/refunds", connectionId: "con_..." },
+  requiresApproval: true, // a human approves in Slack or the dashboard first
+});
+
+const agent = new Agent({ name: "Support", instructions: "...", tools: [refund] });
+const result = await run(agent, "Refund charge ch_123 in full");
+```
+
+Both adapters also take a plain JSON Schema instead of Zod. Frameworks pass
+JSON Schema input through unchecked, so klanex enforces it with its schema
+gate, and a failing input comes back to the model as a correction hint. The
+`klanex/ai` and `klanex/openai-agents` entry points do not use `node:crypto`,
+so they run on edge runtimes too.
 
 ## The self-correction loop
 

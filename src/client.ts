@@ -12,8 +12,8 @@ import type {
 export interface KlanexOptions {
   /** Tenant API key ("klx_..."). */
   apiKey: string;
-  /** Ingest service base URL, e.g. "https://klanex-ingest-....run.app". */
-  baseUrl: string;
+  /** API base URL. Defaults to https://api.klanexai.com. */
+  baseUrl?: string;
   /** Custom fetch (for testing or non-global environments). */
   fetch?: typeof globalThis.fetch;
 }
@@ -23,7 +23,11 @@ export interface WaitOptions {
   pollIntervalMs?: number;
   /** Give up after this long (default 120000). */
   timeoutMs?: number;
+  /** Stop waiting (rejecting with the signal's reason) when aborted. */
+  signal?: AbortSignal;
 }
+
+const DEFAULT_BASE_URL = "https://api.klanexai.com";
 
 const TERMINAL: ReadonlySet<ExecutionStatus> = new Set(["SUCCEEDED", "FAILED"]);
 
@@ -34,9 +38,8 @@ export class Klanex {
 
   constructor(options: KlanexOptions) {
     if (!options.apiKey) throw new Error("klanex: apiKey is required");
-    if (!options.baseUrl) throw new Error("klanex: baseUrl is required");
     this.#apiKey = options.apiKey;
-    this.#baseUrl = options.baseUrl.replace(/\/+$/, "");
+    this.#baseUrl = (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
     this.#fetch = options.fetch ?? globalThis.fetch;
   }
 
@@ -52,8 +55,11 @@ export class Klanex {
         method: request.target.method,
         url: request.target.url,
         headers: request.target.headers,
+        connection_id: request.target.connectionId,
+        seal_url: request.target.sealUrl,
         timeout_ms: request.target.timeoutMs,
       },
+      requires_approval: request.requiresApproval,
       payload: request.payload,
       payload_schema: request.payloadSchema,
       callback_url: request.callbackUrl,
@@ -126,6 +132,7 @@ export class Klanex {
     const interval = options.pollIntervalMs ?? 2000;
     const deadline = Date.now() + (options.timeoutMs ?? 120_000);
     for (;;) {
+      options.signal?.throwIfAborted();
       const execution = await this.get(executionId);
       if (TERMINAL.has(execution.status)) return execution;
       if (Date.now() + interval > deadline) {
@@ -135,7 +142,7 @@ export class Klanex {
           message: `execution ${executionId} still ${execution.status} after ${options.timeoutMs ?? 120_000}ms`,
         });
       }
-      await sleep(interval);
+      await sleep(interval, options.signal);
     }
   }
 
@@ -197,6 +204,7 @@ function toExecution(raw: any): Execution {
       method: raw.target?.method,
       headers: raw.target?.headers,
       timeoutMs: raw.target?.timeout_ms,
+      ...(raw.target?.connection_id ? { connectionId: raw.target.connection_id } : {}),
     },
     createdAt: raw.created_at,
     updatedAt: raw.updated_at,
@@ -204,18 +212,34 @@ function toExecution(raw: any): Execution {
   if (raw.callback_url) execution.callbackUrl = raw.callback_url;
   if (raw.replay_of) execution.replayOf = raw.replay_of;
   if (raw.result) {
-    execution.result = { statusCode: raw.result.status_code, body: raw.result.body };
+    execution.result = {
+      statusCode: raw.result.status_code,
+      body: raw.result.body,
+      ...(raw.result.note ? { note: raw.result.note } : {}),
+    };
   }
   if (raw.error) {
     execution.error = {
       code: raw.error.code,
       message: raw.error.message,
       ...(raw.error.llm_hint ? { llmHint: raw.error.llm_hint } : {}),
+      ...(raw.error.diagnosis ? { diagnosis: raw.error.diagnosis } : {}),
     };
   }
   return execution;
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(done, ms);
+    function done() {
+      signal?.removeEventListener("abort", abort);
+      resolve();
+    }
+    function abort() {
+      clearTimeout(timer);
+      reject(signal?.reason);
+    }
+    signal?.addEventListener("abort", abort, { once: true });
+  });
 }

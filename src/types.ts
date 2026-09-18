@@ -1,5 +1,6 @@
 /** Lifecycle state of an execution. */
 export type ExecutionStatus =
+  | "PENDING_APPROVAL"
   | "QUEUED"
   | "RUNNING"
   | "RETRYING"
@@ -19,7 +20,21 @@ export type ErrorCode =
   | "TARGET_REJECTED"
   | "CIRCUIT_OPEN"
   | "ATTEMPTS_EXHAUSTED"
+  | "APPROVAL_REJECTED"
+  | "CONNECTION_UNAUTHORIZED"
+  | "QUOTA_EXCEEDED"
+  | "ACCOUNT_SUSPENDED"
   | "INTERNAL";
+
+/** Why a target rejected a call, when klanex could tell from its response. */
+export type DiagnosisCause =
+  | "invalid_payload"
+  | "auth"
+  | "permission"
+  | "not_found"
+  | "already_exists"
+  | "rate_limited"
+  | "transient";
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -31,6 +46,10 @@ export interface Target {
   url: string;
   /** Your third-party credentials; encrypted at rest by the engine. */
   headers?: Record<string, string>;
+  /** A vault connection whose managed token is injected at execution time. */
+  connectionId?: string;
+  /** Seal the URL itself like a credential (e.g. a Slack webhook URL). */
+  sealUrl?: boolean;
   /** Per-attempt timeout in ms (default 30000, max 120000). */
   timeoutMs?: number;
 }
@@ -47,6 +66,8 @@ export interface ExecuteRequest {
   maxAttempts?: number;
   /** Tenant-scoped; makes retries of this call safe (≤255 chars). */
   idempotencyKey?: string;
+  /** Pause in PENDING_APPROVAL until a human approves or rejects. */
+  requiresApproval?: boolean;
 }
 
 export interface ExecuteResponse {
@@ -79,12 +100,16 @@ export interface ExecutionError {
   message: string;
   /** Paste this into your agent's context so it can self-correct. */
   llmHint?: string;
+  /** Present when klanex could tell from the target's response why it failed. */
+  diagnosis?: { cause: DiagnosisCause; field?: string };
 }
 
 export interface ExecutionResult {
   statusCode: number;
   /** Target response body, truncated to the engine's storage limit. */
   body: string;
+  /** Explains a success the status code alone does not show. */
+  note?: string;
 }
 
 export interface Execution {
